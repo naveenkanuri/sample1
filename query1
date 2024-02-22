@@ -1,56 +1,57 @@
+def generate_update_queries_from_logs(logs):
+    # Split the logs into lines for processing
+    log_lines = logs.strip().split("\n")
 
+    # Template for the SQL update query
+    query_template = """
     UPDATE databasechangelog
-    SET md5sum = '8:6714c20929126adc8e9bf48279d244',
-        comments = 'UPDATED FROM 9:b68ce996c655922dbcd2fe6b6ae72686 to 8:6714c20929126adc8e9bf48279d244 since problems with 21.0.2 Update'
-    WHERE id = '1.2.0.Beta1'
-      AND md5sum = '9:b68ce996c655922dbcd2fe6b6ae72686';
-    
+    SET md5sum = '{new_md5sum}',
+        comments = 'UPDATED FROM {old_md5sum} to {new_md5sum} since problems with 21.0.2 Update'
+    WHERE id = '{id}'
+      AND md5sum = '{old_md5sum}';
+    """
 
-    UPDATE databasechangelog
-    SET md5sum = '8:7311018b8b8179ce14628ab412bb6783',
-        comments = 'UPDATED FROM 9:543b5c9989f024fe35c6f6c5a97de88e to 8:7311018b8b8179ce14628ab412bb6783 since problems with 21.0.2 Update'
-    WHERE id = '1.2.0.Beta1'
-      AND md5sum = '9:543b5c9989f024fe35c6f6c5a97de88e';
-    
+    # List to hold the generated queries
+    queries = []
 
-    UPDATE databasechangelog
-    SET md5sum = '8:037ba1216c3640f8785ee6b8e7c8e3c1',
-        comments = 'UPDATED FROM 9:765afebbe21cf5bbca48e632df38336 to 8:037ba1216c3640f8785ee6b8e7c8e3c1 since problems with 21.0.2 Update'
-    WHERE id = '1.2.0.CR1'
-      AND md5sum = '9:765afebbe21cf5bbca48e632df38336';
-    
+    # Process each line of the log
+    for line in log_lines:
+        # Extract relevant parts of the log line
+        parts = line.split("::")
+        if len(parts) < 3:
+            continue  # Skip if the line doesn't have enough parts
 
-    UPDATE databasechangelog
-    SET md5sum = '8:7febffe4a14d1289b3157de32c624263',
-        comments = 'UPDATED FROM 9:db4a145ba11a6fdaefb397f6dbf829a1 to 8:7febffe4a14d1289b3157de32c624263 since problems with 21.0.2 Update'
-    WHERE id = '1.2.0.CR1'
-      AND md5sum = '9:db4a145ba11a6fdaefb397f6dbf829a1';
-    
+        id_part = parts[1]
+        checksum_parts = parts[2].split(" was: ")
+        if len(checksum_parts) < 2:
+            continue  # Skip if the checksum part is not in the expected format
 
-    UPDATE databasechangelog
-    SET md5sum = '8:b5f09474dca81fb56a97cf5b6553d331',
-        comments = 'UPDATED FROM 9:18593702353128d53111f9b1ff0b82b8 to 8:b5f09474dca81fb56a97cf5b6553d331 since problems with 21.0.2 Update'
-    WHERE id = '1.3.0'
-      AND md5sum = '9:18593702353128d53111f9b1ff0b82b8';
-    
+        old_md5sum_part = checksum_parts[1].split(" but is now: ")[0].strip()
+        new_md5sum_part = checksum_parts[1].split(" but is now: ")[1].strip()
 
-    UPDATE databasechangelog
-    SET md5sum = '8:ca924f31bd2a3b219fdcfe78c82dacf4',
-        comments = 'UPDATED FROM 9:6122efe8f09041a85c0f1c9e52cbb62 to 8:ca924f31bd2a3b219fdcfe78c82dacf4 since problems with 21.0.2 Update'
-    WHERE id = '1.4.0'
-      AND md5sum = '9:6122efe8f09041a85c0f1c9e52cbb62';
-    
+        # Generate the SQL update query using the extracted information
+        query = query_template.format(
+            new_md5sum=new_md5sum_part,
+            old_md5sum=old_md5sum_part,
+            id=id_part
+        )
 
-    UPDATE databasechangelog
-    SET md5sum = '8:8acad7483e106416bcfa6f3b824a16cd',
-        comments = 'UPDATED FROM 9:e1ff28bf7568451453f844c5d54bbb85 to 8:8acad7483e106416bcfa6f3b824a16cd since problems with 21.0.2 Update'
-    WHERE id = '1.4.0'
-      AND md5sum = '9:e1ff28bf7568451453f844c5d54bbb85';
-    
+        # Add the generated query to the list
+        queries.append(query)
 
-    UPDATE databasechangelog
-    SET md5sum = '8:91266d17f4f87c78226f5055408fd5e',
-        comments = 'UPDATED FROM 9:7f32cd8957fbc069f796b61217483fd to 8:91266d17f4f87c78226f5055408fd5e since problems with 21.0.2 Update'
-    WHERE id = '1.5.0'
-      AND md5sum = '9:7f32cd8957fbc069f796b61217483fd';
-    
+    return queries
+
+# Example usage
+if __name__ == "__main__":
+    # Example logs input
+    logs = """
+    META-INF/jpa-changelog-14.0.0.xml::14.0.0-KEYCLOAK-18286-supported-dbs::keycloak was: 8:f43dfba07ba249d5d932dc489fd2b886 but is now: 8:c0f6eaac1f3be773ffe54cb5b8482b70
+    META-INF/jpa-changelog-20.0.0.xml::20.0.0-12964-supported-dbs::keycloak was: 8:d00f99ed899c4d2ae9117e282badbef5 but is now: 8:05c99fc610845ef66ee812b7921af0ef
+    """
+
+    # Generate update queries from the logs
+    update_queries = generate_update_queries_from_logs(logs)
+
+    # Print each generated query
+    for query in update_queries:
+        print(query.strip())
